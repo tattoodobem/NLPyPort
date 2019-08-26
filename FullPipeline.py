@@ -117,7 +117,7 @@ def join_data(tokens,tags,lem):
 		dados.append(lem[i]) 
 		data.append(dados)
 	return data
-def join_entities(data, entities, tokens):
+def join_entities_tokens(data, entities, tokens):
 	for i in range(len(data)):
 		data[i],append(entities[0])
 		data[i],append(tokens[0])
