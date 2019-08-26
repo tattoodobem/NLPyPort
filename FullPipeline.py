@@ -44,8 +44,8 @@ def load_config(config_file="config/global.properties"):
 				elif(line.split("=")[0]=="LemPort_config_file"):
 					LemPort_config_file = line.split("=")[1].strip("\n")
 # """word tokenizer"""
-def tokenize(fileinput):
-	return nlpyport_tokenizer(fileinput,TokPort_config_file)
+def tokenize(text):
+	return nlpyport_tokenizer(text,TokPort_config_file)
 
 def tag(tokens):
 	return nlpyport_pos(tokens,TagPort_config_file)
@@ -108,17 +108,21 @@ def lem_file(out,token,tag):
 			f.write((line).encode('utf8'))
 	return lem
 
-def join_data(tokens,tags,lem):
+def join_data(tokens,ftokens,tags,lem):
 	data = []
 	for i in range(len(tokens)):
 		dados = []
-		dados.append(tokens[i]) 
+		dados.append(tokens[i])
+		dados.append(ftokens[i]) 
 		dados.append(tags[i]) 
 		dados.append(lem[i]) 
 		data.append(dados)
 	return data
-
-def full_pipe(input_file,out_file=""):
+def join_entities(data, entities):
+	for i in range(len(data)):
+		data[i],append(entities[0])
+	return data
+def full_pipe(input_text,out_text=""):
 
 	#load the pipeline configurations
 	load_config()
@@ -126,40 +130,42 @@ def full_pipe(input_file,out_file=""):
 	#############
 	#Tokenize
 	#############
-	tokens = tokenize(input_file)
-	
-	#############
-	#Pos
-	#############
-	tags,result_tags = tag(tokens)
-	
-	#### Pre load a file with tokens and tags
-	#tokens,tags = load_manual(input_file)
-	#tokens,tags = load_manual("TokPyPort/conll_tagged_text_all.txt")
+	sentences = tokenize(input_text)
+	psentences = []
+	for sentence in sentences:		
+		#############
+		#Pos
+		#############
+		tags,result_tags = tag(sentence["ftokens"])
+		
+		#### Pre load a file with tokens and tags
+		#tokens,tags = load_manual(input_file)
+		#tokens,tags = load_manual("TokPyPort/conll_tagged_text_all.txt")
 
-	#############
-	#Lemmatizer
-	#############
-	lemas = lematizador_normal(tokens,tags)
-	#Re-write the file with the lemas
-	write_lemmas_only_text(lemas,"File.txt")
+		#############
+		#Lemmatizer
+		#############
+		lemas = lematizador_normal(sentence["ftokens"],tags)
+		#Re-write the file with the lemas
+		#Why am i forced to write a file?
+		#write_lemmas_only_text(lemas,"File.txt")
 
-	#############
-	#Entity recognition
-	#############
-	entidades = []
-	joined_data = join_data(tokens,tags,lemas)
-	trained_model = "CRF/trainedModels/harem.pickle"
-	entidades = run_crf(joined_data,trained_model)
-
-	#write_simple_connl(tokens,tags,lemas,entidades,out_file)
-
-	return tokens,tags,lemas,entidades
+		#############
+		#Entity recognition
+		#############
+		entidades = []
+		joined_data = join_data(sentence["tokens"],sentence["ftokens"],tags,lemas)
+		trained_model = "CRF/trainedModels/harem.pickle"
+		entidades = run_crf(joined_data,trained_model)
+		data = join_entities(joined_data, entidades)
+		#write_simple_connl(tokens,tags,lemas,entidades,out_file)
+		psentences.append(data) 
+	return psentences
 
 
 if __name__ == "__main__":
-	input_file = "SampleInput/Sample.txt"
-	out_file = "SampleOut.txt"
+	input_text = "isto é uma amostra de texto!"
+	out_text = ""
 
 	#run the full pipeline
-	tokens,tags,lemas,entidades = full_pipe(input_file,out_file)
+	sentences = full_pipe(input_text,out_text)
