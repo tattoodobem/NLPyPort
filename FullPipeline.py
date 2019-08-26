@@ -108,19 +108,19 @@ def lem_file(out,token,tag):
 			f.write((line).encode('utf8'))
 	return lem
 
-def join_data(tokens,ftokens,tags,lem):
+def join_data(tokens,tags,lem):
 	data = []
 	for i in range(len(tokens)):
 		dados = []
 		dados.append(tokens[i])
-		dados.append(ftokens[i]) 
 		dados.append(tags[i]) 
 		dados.append(lem[i]) 
 		data.append(dados)
 	return data
-def join_entities(data, entities):
+def join_entities(data, entities, tokens):
 	for i in range(len(data)):
 		data[i],append(entities[0])
+		data[i],append(tokens[0])
 	return data
 def full_pipe(input_text,out_text=""):
 
@@ -154,10 +154,10 @@ def full_pipe(input_text,out_text=""):
 		#Entity recognition
 		#############
 		entidades = []
-		joined_data = join_data(sentence["tokens"],sentence["ftokens"],tags,lemas)
+		joined_data = join_data(sentence["ftokens"],tags,lemas)
 		trained_model = "CRF/trainedModels/harem.pickle"
 		entidades = run_crf(joined_data,trained_model)
-		data = join_entities(joined_data, entidades)
+		data = join_entities_tokens(joined_data, entidades, sentence["tokens"])
 		#write_simple_connl(tokens,tags,lemas,entidades,out_file)
 		psentences.append(data) 
 	return psentences
