@@ -98,37 +98,55 @@ def nltk_tokenize(text):
 			result.append(elem)
 		result.append("\n")
 	return result
-
-def nlpyport_tokenizer(fileinput,TokPort_config_file):
+def nlpyport_sent_tokenizer(text):
+	sentences = []
+	sent_tokenizer=nltk.data.load('tokenizers/punkt/portuguese.pickle')
+	sentences = sent_tokenizer.tokenize(text)
+	if(len(sentences)==0):
+		sentences.append(text)
+	return sentences
+def nlpyport_tokenizer(text,TokPort_config_file, file=False, sentenceTokenizer=True):
 	#define the tagset being used
 	floresta.tagged_words(tagset = "pt-bosque")
 	contractions_path = ""
 	clitics_path = ""
-	text = " "
 	tokens=[]
 	tokens_after_contractions = []
 	tokens_after_clitics = []
+	psentences = []
+	
 	#get the directory of the resources
 	contractions_path,clitics_path = load_token_configurations(TokPort_config_file)
 
-	#Get tokens from input file, one by line
-	text = get_input_from_file(fileinput)
-
+	if(file!= False):
+		text = get_input_from_file(text)
 	#Do thea actual tokenization
-	tokens = nltk_tokenize(text)
-	#for i in range(len(tokens)):
-	#	if(tokens[i])=="#":
-	#		tokens[i] = "\n"
-	tokens_after_contractions = replace_contrations(contractions_path,tokens)
+	if(sentenceTokenizer):
+		sentences = nlpyport_sent_tokenizer(text)
+		for i,sentence in enumerate(sentences):
+			tokens = []
+			tokens = nltk.word_tokenize(sentence)
+			psentences.append({"tokens":tokens,"ftokens":[]}) 
+	else:
+		tokens = nltk_tokenize(text)
+		psentences.append({"tokens":tokens,"ftokens":[]})
+	print(psentences) 	
+	for sentence in psentences:	
+		#for i in range(len(tokens)):
+		#	if(tokens[i])=="#":
+		#		tokens[i] = "\n"
+		print(sentence["tokens"])
+		tokens_after_contractions = replace_contrations(contractions_path,sentence["tokens"])
 
-	#Check if tokens contain clitics
-	#If so, change them to the most extended form
-	tokens_after_clitics =replace_clitics(clitics_path,tokens_after_contractions)
-	final_tokens =[]
-	for tok in tokens_after_clitics:
-		final_tokens.append(tok)
-	return final_tokens
-
+		#Check if tokens contain clitics
+		#If so, change them to the most extended form
+		tokens_after_clitics =replace_clitics(clitics_path,tokens_after_contractions)
+		final_tokens =[]
+		for tok in tokens_after_clitics:
+			final_tokens.append(tok)
+		sentence["ftokens"] = final_tokens
+	print(psentences)	
+	return psentences
 '''
 if __name__ == '__main__':
 	print(nlpyport_tokenizer("EntradaCadeiaTotal.txt"))
