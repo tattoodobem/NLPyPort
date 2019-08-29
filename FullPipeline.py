@@ -30,6 +30,8 @@ TokPort_config_file = ""
 TagPort_config_file = ""
 LemPort_config_file = ""
 
+
+
 def load_config(config_file="config/global.properties"):
 	global TokPort_config_file
 	global TagPort_config_file
@@ -117,11 +119,12 @@ def join_data(tokens,tags,lem):
 		dados.append(lem[i]) 
 		data.append(dados)
 	return data
-def join_entities_tokens(data, entities, tokens):
-	for i in range(len(data)):
-		data[i],append(entities[0])
-		data[i],append(tokens[0])
-	return data
+def join_entities_tokens(tags, lemas, entities, tokens):
+	for i in range(len(tokens)):
+		tokens[i].entity = entities[i]
+		tokens[i].lemma =lemas[i]
+		tokens[i].tag =tags[i]
+	return tokens
 def full_pipe(input_text,out_text=""):
 
 	#load the pipeline configurations
@@ -130,42 +133,52 @@ def full_pipe(input_text,out_text=""):
 	#############
 	#Tokenize
 	#############
-	sentences = tokenize(input_text)
-	psentences = []
-	for sentence in sentences:		
-		#############
-		#Pos
-		#############
-		tags,result_tags = tag(sentence["ftokens"])
-		
-		#### Pre load a file with tokens and tags
-		#tokens,tags = load_manual(input_file)
-		#tokens,tags = load_manual("TokPyPort/conll_tagged_text_all.txt")
+	tokensList = tokenize(input_text)
+	#############
+	#Pos
+	#############
+	processTokens = [tokens.ptoken for tokens in tokensList if tokens.ptoken!='']
+	tags,result_tags = tag(processTokens)
+	
+	#### Pre load a file with tokens and tags
+	#tokens,tags = load_manual(input_file)
+	#tokens,tags = load_manual("TokPyPort/conll_tagged_text_all.txt")
 
-		#############
-		#Lemmatizer
-		#############
-		lemas = lematizador_normal(sentence["ftokens"],tags)
-		#Re-write the file with the lemas
-		#Why am i forced to write a file?
-		#write_lemmas_only_text(lemas,"File.txt")
+	#############
+	#Lemmatizer
+	#############
+	lemas = lematizador_normal(processTokens,tags)
+	#Re-write the file with the lemas
+	#Why am i forced to write a file?
+	#write_lemmas_only_text(lemas,"File.txt")
 
-		#############
-		#Entity recognition
-		#############
-		entidades = []
-		joined_data = join_data(sentence["ftokens"],tags,lemas)
-		trained_model = "CRF/trainedModels/harem.pickle"
-		entidades = run_crf(joined_data,trained_model)
-		data = join_entities_tokens(joined_data, entidades, sentence["tokens"])
-		#write_simple_connl(tokens,tags,lemas,entidades,out_file)
-		psentences.append(data) 
-	return psentences
+	#############
+	#Entity recognition
+	#############
+	entidades = []
+	joined_data = join_data(processTokens,tags,lemas)
+	trained_model = "CRF/trainedModels/harem.pickle"
+	entidades = run_crf(joined_data,trained_model)
+	#print(entidades)
+	#print(sentence["tokens"])
+	#print(len(sentence["tokens"]))
+	data = join_entities_tokens(tags, lemas, entidades, [tokens for tokens in tokensList if tokens.ptoken!=''])
+	#data= []
+	#write_simple_connl(tokens,tags,lemas,entidades,out_file)
+	return data
+def printTokens(input_text):
+	tokens = full_pipe(input_text)
+	from operator import attrgetter
+	tokens = sorted(tokens, key=attrgetter('pos'))     # sort on secondary key
+	tokens = sorted(tokens, key=attrgetter('line'))  
 
+	print("line pos original token lema entity contractions clitics tag")
+	for token in tokens:
+		print ("%s | %s | %s | %s | %s |  %s | %s | %s | %s" % (token.line, token.pos, token.token, token.ptoken, token.lemma, token.entity, token.contractions, token.clitics, token.tag))
 
 if __name__ == "__main__":
 	input_text = "isto é uma amostra de texto!"
 	out_text = ""
 
 	#run the full pipeline
-	sentences = full_pipe(input_text,out_text)
+	#tokens = full_pipe(input_text,out_text)
